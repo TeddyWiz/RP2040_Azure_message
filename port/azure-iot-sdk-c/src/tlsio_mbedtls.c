@@ -134,7 +134,7 @@ static bool is_fragmented_send_request(TLS_IO_INSTANCE *tls_io_instance, size_t 
 #if defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
     size_t max_len = mbedtls_ssl_get_max_frag_len(&tls_io_instance->ssl);
 #else
-    // size_t max_len = MBEDTLS_SSL_MAX_CONTENT_LEN;
+    //size_t max_len = MBEDTLS_SSL_MAX_CONTENT_LEN;
     size_t max_len = MBEDTLS_SSL_OUT_CONTENT_LEN;
     (void)tls_io_instance;
 #endif /* MBEDTLS_SSL_MAX_FRAGMENT_LENGTH */
@@ -463,8 +463,8 @@ static void my_debug(void *ctx, int level,
                      const char *str)
 {
     ((void)level);
-    // mbedtls_fprintf( (FILE *) ctx, "%s:%04d: %s", file, line, str );
-    // fflush(  (FILE *) ctx  );
+    //mbedtls_fprintf( (FILE *) ctx, "%s:%04d: %s", file, line, str );
+    //fflush(  (FILE *) ctx  );
     printf("%s:%04d: %s", file, line, str);
 }
 
@@ -502,9 +502,9 @@ static void mbedtls_init(TLS_IO_INSTANCE *tls_io_instance)
         mbedtls_ssl_conf_authmode(&tls_io_instance->config, MBEDTLS_SSL_VERIFY_REQUIRED);
 #else
         mbedtls_ssl_conf_authmode(&tls_io_instance->config, MBEDTLS_SSL_VERIFY_OPTIONAL);
-        // mbedtls_ssl_conf_authmode( &tls_io_instance->config, MBEDTLS_SSL_VERIFY_NONE );
+        //mbedtls_ssl_conf_authmode( &tls_io_instance->config, MBEDTLS_SSL_VERIFY_NONE );
 #endif
-        // mbedtls_ssl_conf_ca_chain( &tls_io_instance->config, &tls_io_instance->trusted_certificates_parsed, NULL );
+        //mbedtls_ssl_conf_ca_chain( &tls_io_instance->config, &tls_io_instance->trusted_certificates_parsed, NULL );
 
         mbedtls_ssl_conf_min_version(&tls_io_instance->config, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3); // v1.2
 
@@ -964,9 +964,9 @@ int tlsio_mbedtls_setoption(CONCRETE_IO_HANDLE tls_io, const char *optionName, c
                      * may still succeed if the other certificates in the CA chain are enough for the authentication */
                     LogInfo("mbedtls_x509_crt_parse was partly successful. No. of failed certificates: %d", parse_result);
                 }
-                // else
+                //else
                 //{
-                mbedtls_ssl_conf_ca_chain(&tls_io_instance->config, &tls_io_instance->trusted_certificates_parsed, NULL);
+                    mbedtls_ssl_conf_ca_chain(&tls_io_instance->config, &tls_io_instance->trusted_certificates_parsed, NULL);
                 //}
             }
         }

@@ -23,11 +23,6 @@
 #include "hardware/structs/pll.h"
 #include "hardware/structs/clocks.h"
 
-//#include "hardware/flash.h"
-#include "hardware/watchdog.h"
 #include "pico/critical_section.h"
 #include "hardware/irq.h"
-
-
-
 #endif /* _PORT_COMMON_H_ */

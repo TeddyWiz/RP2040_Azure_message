@@ -18,7 +18,6 @@
 #include <time.h>
 
 #include "pico/stdlib.h"
-#include "hardware/watchdog.h"
 
 #include "netif.h"
 
@@ -88,6 +87,7 @@ int8_t wizchip_network_initialize(bool bDHCP, wiz_NetInfo *netinfo)
         g_net_info->dhcp = NETINFO_DHCP;
 
         wizchip_dhcp_init();
+
         ret = wizchip_dhcp_run();
     }
     else // static
@@ -114,9 +114,7 @@ uint8_t wizchip_dhcp_run(void)
 
     while (1)
     {
-        watchdog_update();
         retval = DHCP_run();
-        watchdog_update();
 
         if (retval == DHCP_IP_LEASED)
         {
@@ -152,12 +150,10 @@ uint8_t wizchip_dhcp_run(void)
 
             break;
         }
-        //sleep_ms(300);
-        
-        watchdog_update();
-        sleep_ms(500); // wait for 1 second
+
+        sleep_ms(1000); // wait for 1 second
     }
-    watchdog_update();
+
     return retval;
 }
 

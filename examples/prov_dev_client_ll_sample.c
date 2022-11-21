@@ -3,7 +3,6 @@
 #include <string.h>
 #include "pico/stdlib.h"
 #include "pico/util/datetime.h"
-#include "hardware/adc.h"
 
 #include "wizchip_conf.h"
 #include "dhcp.h"
@@ -26,8 +25,6 @@
 
 #include "mbedtls/debug.h"
 #include "azure_samples.h"
-#include "manage_process.h"
-
 
 /* This sample uses the _LL APIs of iothub_client for example purposes.
 Simply changing the using the convenience layer (functions not having _LL)
@@ -72,40 +69,15 @@ MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(PROV_DEVICE_RESULT, PROV_DEVICE_RESULT_VA
 MU_DEFINE_ENUM_STRINGS_WITHOUT_INVALID(PROV_DEVICE_REG_STATUS, PROV_DEVICE_REG_STATUS_VALUES);
 
 static const char *global_prov_uri = "global.azure-devices-provisioning.net";
-// static const char* id_scope = "[ID Scope]";
+//static const char* id_scope = "[ID Scope]";
 static const char *id_scope = pico_az_id_scope;
 
 static bool g_use_proxy = false;
 static const char *PROXY_ADDRESS = "127.0.0.1";
-#if 0
-/*LIGHT PLATE*/
-const uint PI_READ_PIN = 2; // PI에서 도광판 제어 read 하는 핀
-const uint LIGHT_PIN = 3;   //도광판 ON/OFF 제어
-const uint BUTTON_PIN = 4;  // BUTTON ON?OFF 핀
 
-/*RPi Run & Reset*/
-const uint STATUS_PIN = 5; // RPi Arhis Service RUN check gpio
-// const uint PI_RESET_PIN = 6;   // RPi power reset
-const uint PI_RESET_PIN = 25; // TEST power reset (PICO LED)
-
-/*ADC*/
-const uint ADC_PIN_1 = 26; // ADC0 +12V read
-const uint ADC_PIN_2 = 27; // ADC1 +12V read
-#endif
 #define PROXY_PORT 8888
 #define MESSAGES_TO_SEND 2
 #define TIME_BETWEEN_MESSAGES 10
-
-/*Global value*/
-int status_value = 0;
-int status_flag = 0;
-
-int light_blink = 0;
-
-static size_t g_message_count_send_confirmations = 0;
-
-
-
 
 typedef struct CLIENT_SAMPLE_INFO_TAG
 {
@@ -123,114 +95,9 @@ typedef struct IOTHUB_CLIENT_SAMPLE_INFO_TAG
     int stop_running;
 } IOTHUB_CLIENT_SAMPLE_INFO;
 
-
-//teddy 220916
 IOTHUB_CLIENT_SAMPLE_INFO iothub_info;
 TICK_COUNTER_HANDLE tick_counter_handle;
 IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
-#if 0
-uint8_t pi_read_gpio()
-{
-    uint8_t read_dat;
-    gpio_init(PI_READ_PIN);
-    gpio_set_dir(PI_READ_PIN, GPIO_IN);
-    read_dat = gpio_get(PI_READ_PIN);
-
-    return read_dat;
-}
-
-void blink_task(bool status_light)
-{
-    int read_dat;
-
-    /* LIGHT SET */
-    gpio_init(LIGHT_PIN);
-    gpio_set_dir(LIGHT_PIN, GPIO_OUT);
-
-    /* BUTTON SET */
-    gpio_init(BUTTON_PIN);
-    gpio_set_dir(BUTTON_PIN, GPIO_IN);
-    gpio_pull_up(BUTTON_PIN);
-
-    read_dat = pi_read_gpio();
-
-    if (read_dat == 0 || (!gpio_get(BUTTON_PIN))) // read_dat 도관판 제어 LOW(0)일 때 켜짐
-    {
-        gpio_put(LIGHT_PIN, status_light);
-    }
-}
-
-void adc_task(float *adc_dat_1, float *adc_dat_2)
-{
-    uint16_t adc_1 = 0;
-    uint16_t adc_2 = 0;
-
-    /* ADC SET */
-    adc_init();
-    adc_gpio_init(ADC_PIN_1);
-    adc_gpio_init(ADC_PIN_2);
-
-    adc_select_input(0); // ADC 0
-    adc_1 = adc_read();
-    adc_select_input(1); // ADC 1
-    adc_2 = adc_read();
-
-    const float conversion_factor = 18.85 / 4096;
-
-    *adc_dat_1 = (adc_1 * conversion_factor);
-    *adc_dat_2 = (adc_2 * conversion_factor);
-    // printf("ADC 0 voltage : %.02fV || ADC 1 voltage : %.02fV\r\n", adc_dat_1, adc_dat_2);
-}
-#endif
-
-#if 0
-int64_t alarm_callback(alarm_id_t id, void *user_data)
-{
-    float adc_get_1, adc_get_2;
-    int g_read = gpio_get(STATUS_PIN);
-
-    adc_task(&adc_get_1, &adc_get_2);
-
-    // printf("ADC(1) : %.02fV\r\n", adc_get_1);
-    // printf("ADC(2) : %.02fV\r\n", adc_get_2);
-
-    /* RPi Arhis Service RUN check */
-    if (g_read == 1)
-    {
-        status_value = status_value + 1;
-    }
-    else if (g_read == 0)
-    {
-        status_value = status_value - 1;
-    }
-    // printf("gpio read value = %d\n", status_value);
-    if (status_value >= 20 || status_value <= -20)
-    {
-        printf("[ARHIS] Service not operation\n");
-        status_value = 0;
-        status_flag = 1;
-    }
-    else
-    {
-        status_flag = 0;
-    }
-
-    /* LIGHT PLATE ON SET */
-    if (light_blink % 2 == 0)
-    {
-        blink_task(true);
-        light_blink++;
-    }
-    /* LIGHT PLATE OFF SET */
-    else
-    {
-        blink_task(false);
-        light_blink = 0;
-    }
-    return 500000;
-}
-#endif
-
 static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *userContextCallback)
 {
     (void)userContextCallback;
@@ -345,19 +212,16 @@ static void register_device_callback(PROV_DEVICE_RESULT register_result, const c
 void prov_dev_client_ll_sample(void)
 {
     SECURE_DEVICE_TYPE hsm_type;
-    // hsm_type = SECURE_DEVICE_TYPE_TPM;
+    //hsm_type = SECURE_DEVICE_TYPE_TPM;
     hsm_type = SECURE_DEVICE_TYPE_X509;
-    // hsm_type = SECURE_DEVICE_TYPE_SYMMETRIC_KEY;
+    //hsm_type = SECURE_DEVICE_TYPE_SYMMETRIC_KEY;
 
     bool traceOn = false;
-    size_t messages_count = 0;
 
     (void)IoTHub_Init();
     (void)prov_dev_security_init(hsm_type);
-
-    add_alarm_in_ms(500, alarm_callback, NULL, false);
     // Set the symmetric key if using they auth type
-    // prov_dev_set_symmetric_key_info("symm-key-device-007", "hyKuFyHXCUVE1fW9f+phyNSs0X+8ZInphXD5riBsN7023c7WonbefqCaRtjBo6al3fhb3lXL2cV8qJafpU0kmA==");
+    //prov_dev_set_symmetric_key_info("symm-key-device-007", "hyKuFyHXCUVE1fW9f+phyNSs0X+8ZInphXD5riBsN7023c7WonbefqCaRtjBo6al3fhb3lXL2cV8qJafpU0kmA==");
 
     PROV_DEVICE_TRANSPORT_PROVIDER_FUNCTION prov_transport;
     HTTP_PROXY_OPTIONS http_proxy;
@@ -417,7 +281,7 @@ void prov_dev_client_ll_sample(void)
 
         // This option sets the registration ID it overrides the registration ID that is
         // set within the HSM so be cautious if setting this value
-        // Prov_Device_LL_SetOption(handle, PROV_REGISTRATION_ID, "[REGISTRATION ID]");
+        //Prov_Device_LL_SetOption(handle, PROV_REGISTRATION_ID, "[REGISTRATION ID]");
 
         if (Prov_Device_LL_Register_Device(handle, register_device_callback, &user_ctx, registration_status_callback, &user_ctx) != PROV_DEVICE_RESULT_OK)
         {
@@ -486,25 +350,23 @@ void prov_dev_client_ll_sample(void)
             IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
-            // (void)IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle, deviceMethodCallback, &iothub_info);
-            if (IoTHubDeviceClient_LL_SetDeviceMethodCallback(device_ll_handle, deviceMethodCallback, &messages_count) != IOTHUB_CLIENT_OK)
-            {
-                (void)printf("ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\r\n");
-            }
+            (void)IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle, receive_msg_callback, &iothub_info);
 
+            (void)printf("Sending 1 messages to IoTHub every %d seconds for %d messages (Send any message to stop)\r\n", TIME_BETWEEN_MESSAGES, MESSAGES_TO_SEND);
             do
             {
                 if (iothub_info.connected != 0)
                 {
-                    if (status_flag == 1)
+                    // Send a message every TIME_BETWEEN_MESSAGES seconds
+                    (void)tickcounter_get_current_ms(tick_counter_handle, &current_tick);
+                    (void)printf("current_tick (%lld), last_send_time(%lld)!\r\n", current_tick, last_send_time);
+
+                    if ((current_tick - last_send_time) / 1000 > TIME_BETWEEN_MESSAGES)
                     {
                         static char msgText[1024];
-                        sprintf(msgText, "{\"message\" : \"[ARHIS] device not operated\"}");
-                        (void)printf("\r\nSending message to IoTHub\r\nMessage: %s\r\n", msgText);
+                        sprintf_s(msgText, sizeof(msgText), "{ \"message_index\" : \"%zu\" }", msg_count++);
 
                         IOTHUB_MESSAGE_HANDLE msg_handle = IoTHubMessage_CreateFromByteArray((const unsigned char *)msgText, strlen(msgText));
-                        (void)IoTHubMessage_SetProperty(msg_handle, "display_message", "RP2040_W5100S_SEND");
-
                         if (msg_handle == NULL)
                         {
                             (void)printf("ERROR: iotHubMessageHandle is NULL!\r\n");
@@ -526,7 +388,7 @@ void prov_dev_client_ll_sample(void)
                 }
                 IoTHubDeviceClient_LL_DoWork(device_ll_handle);
                 ThreadAPI_Sleep(1);
-            } while (true);
+            } while (iothub_info.stop_running == 0 && msg_count < MESSAGES_TO_SEND);
 
             size_t index = 0;
             for (index = 0; index < 10; index++)

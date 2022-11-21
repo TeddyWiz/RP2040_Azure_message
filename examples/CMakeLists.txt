@@ -23,9 +23,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 target_link_libraries(${TARGET_NAME} PRIVATE
 		cmsis_core
         pico_stdlib
-        pico_multicore
         hardware_spi
-        hardware_adc
         hardware_rtc
         hardware_flash
         ETHERNET_FILES
@@ -40,8 +38,8 @@ target_link_libraries(${TARGET_NAME} PRIVATE
         )
 
 # enable usb output, disable uart output
-pico_enable_stdio_usb(${TARGET_NAME} 0)
-pico_enable_stdio_uart(${TARGET_NAME} 1)
+pico_enable_stdio_usb(${TARGET_NAME} 1)
+pico_enable_stdio_uart(${TARGET_NAME} 0)
 
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(${TARGET_NAME})

@@ -23,9 +23,6 @@
 #include "mbedtls/debug.h"
 #include "azure_samples.h"
 
-#include "hardware/timer.h"
-#include "hardware/gpio.h"
-
 /* This sample uses the _LL APIs of iothub_client for example purposes.
 Simply changing the using the convenience layer (functions not having _LL)
 and removing calls to _DoWork will yield the same results. */
@@ -59,52 +56,13 @@ and removing calls to _DoWork will yield the same results. */
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
 /* Paste in the your iothub connection string  */
-// static const char* connectionString = "[device connection string]";
+//static const char* connectionString = "[device connection string]";
 static const char *connectionString = pico_az_connectionString;
 
 //#define MESSAGE_COUNT 3
 static bool g_continueRunning = true;
 static size_t g_message_count_send_confirmations = 0;
 static size_t g_message_recv_count = 0;
-
-const uint RESET_PIN = 25; // TEST PICO LED
-
-// const uint PI_READ_PIN = 2; // PI에서 GPIO read 하는 핀
-// const uint LIGHT_PIN = 3;  //도광판 제어 (3)핀
-// const uint BUTTON_PIN = 4; // Button Pin
-// const uint STATUS_PIN = 5; // RPi status gpio
-// const uint RESET_PIN = 6;  // Reset raspberry pi
-
-/*Global value*/
-// int status_value = 0;
-// int status_flag = 0;
-
-// int light_blink = 0;
-
-// int64_t alarm_callback(alarm_id_t id, void *user_data)
-// {
-//     int g_read = gpio_get(STATUS_PIN);
-//     if (g_read == 1)
-//     {
-//         status_value = status_value + 1;
-//     }
-//     else if (g_read == 0)
-//     {
-//         status_value = status_value - 1;
-//     }
-//     printf("gpio read value = %d\n", status_value);
-//     if (status_value >= 20 || status_value <= -20)
-//     {
-//         printf("Service not operation\n");
-//         status_value = 0;
-//         status_flag = 1;
-//     }
-//     else
-//     {
-//         status_flag = 0;
-//     }
-//     return 500000;
-// }
 
 static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void *userContextCallback)
 {
@@ -266,6 +224,7 @@ void iothub_ll_c2d_sample(void)
         }
         else
         {
+
             do
             {
                 // printf("stat flag = %d\n", status_flag);
@@ -311,4 +270,5 @@ void iothub_ll_c2d_sample(void)
     }
     // Free all the sdk subsystem
     IoTHub_Deinit();
-} //===========================
+}
+//===========================

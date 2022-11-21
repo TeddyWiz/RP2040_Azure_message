@@ -27,17 +27,8 @@
 #include "azure_samples.h"
 #include "proto_pi_CMD.h"
 
-#include "hardware/rtc.h"
-#include "hardware/gpio.h"
 #include "timer.h"
 #include "manage_process.h"
-
-#include "pico/multicore.h"
-#include "hardware/watchdog.h"
-
-//#include "hardware/watchdog.h"
-
-
 /**
  * ----------------------------------------------------------------------------------------------------
  * Macros
@@ -92,65 +83,6 @@ static void set_clock_khz(void);
 /* Timer callback */
 static void repeating_timer_callback(void);
 
-
-void core1_entry() {
-    while(1)
-    {
-        //g_cnt++;
-        //printf("core1 cnt = %d\r\n", g_cnt);
-        //sleep_ms(200);
-        proto_uart_process();
-    }
-}
-void CheckEthernet(void)
-{
-    uint8_t temp;
-    int8_t networkip_setting = 0;
-    switch(NetStatus)
-    {
-        case 0:
-            if (ctlwizchip(CW_GET_PHYLINK, (void *)&temp) == -1)
-            {
-                printf(" Unknown PHY link status\n");
-            }
-            if(temp == PHY_LINK_ON)
-            {
-                NetStatus++;
-                printf("network next[%d]\r\n", NetStatus);
-            }
-            break;
-        case 1:
-            // dhcp 
-            watchdog_update();
-#ifdef _DHCP
-            // this example uses DHCP
-            networkip_setting = wizchip_network_initialize(true, &g_net_info);
-#else
-            // this example uses static IP
-            networkip_setting = wizchip_network_initialize(false, &g_net_info);
-#endif
-#if DEBUG_UDP_EN
-            init_Debug_UDP();
-            DebugSend("Debug Start", 11);
-#endif
-#if AZURE_EN
-            if(networkip_setting)
-                prov_dev_client_ll_Connect();
-            else
-                printf(" Check your network setting.\n");
-            // Enable the watchdog, requiring the watchdog to be updated every 100ms or the chip will reboot
-            // second arg is pause on debug which means the watchdog will pause when stepping through code
-#endif
-            NetStatus++;
-            printf("network ready[%d]\r\n", NetStatus);
-
-            break;
-        default:
-            break;
-    }
-}
-
-
 /**
  * ----------------------------------------------------------------------------------------------------
  * Main
@@ -158,27 +90,17 @@ void CheckEthernet(void)
  */
 int main()
 {
-    //-----------------------------------------------------------------------------------
-    // Pico board configuration - W5100S, GPIO, Timer Setting
-    //-----------------------------------------------------------------------------------
-    //int8_t networkip_setting = 0;
-
-    datetime_t t = {
-            .year  = 2022,
-            .month = 05,
-            .day   = 24,
-            .dotw  = 5, // 0 is Sunday, so 5 is Friday
-            .hour  = 11,
-            .min   = 40,
-            .sec   = 00
-    };
+//-----------------------------------------------------------------------------------
+// Pico board configuration - W5100S, GPIO, Timer Setting
+//-----------------------------------------------------------------------------------
+    int8_t networkip_setting = 0;
 
     set_clock_khz();
 
     stdio_init_all();
     proto_uart_init();
 
-    wizchip_delay_ms(1000 * 2); // wait for 2 seconds
+    wizchip_delay_ms(1000 * 3); // wait for 3 seconds
 
     wizchip_spi_initialize();
     wizchip_cris_initialize();
@@ -188,11 +110,6 @@ int main()
     wizchip_check();
 
     wizchip_1ms_timer_initialize(repeating_timer_callback);
-    // Start the RTC
-    rtc_init();
-    rtc_set_datetime(&t);
-    init_GPIO_IRQ();
-    init_ADC();
 
     printf("hello pico arhis system \n");
 #if 0
@@ -203,30 +120,10 @@ int main()
     // this example uses static IP
     networkip_setting = wizchip_network_initialize(false, &g_net_info);
 #endif
-    //W5100s_ping();
 
-    #if DEBUG_UDP_EN
-    init_Debug_UDP();
-    DebugSend("Debug Start", 11);
-    #endif
-    #endif
-    #if 1   //watchdog init
-    sleep_ms(100);
-    if(watchdog_caused_reboot()) {
-        printf("Rebooted by Watchdog!\n");
-        DebugSend("Rebooted by Watchdog!\r\n", strlen("Rebooted by Watchdog!\r\n"));
-        //watchdog_reboot(0,0,0);
-        //return 0;
-    }else {
-        printf("Clean boot\n");
-        DebugSend("Clean boot\r\n", strlen("Clean boot\r\n"));
-    }
-    #endif
     Load_Flash_Internal_Data();
-    //multicore_launch_core1(core1_entry);
     // bool cancelled = cancel_repeating_timer(&timer);
     // printf("cancelled... %d\n", cancelled);
-    #if 0
     if (networkip_setting)
     {
 //-----------------------------------------------------------------------------------
@@ -246,41 +143,17 @@ int main()
 #endif // APP_CLI_X509
 #ifdef APP_PROV_X509
         prov_dev_client_ll_sample();
-#endif // APP_PROV_X509
-       //-----------------------------------------------------------------------------------
+#endif  // APP_PROV_X509
+//-----------------------------------------------------------------------------------
     }
     else
         printf(" Check your network setting.\n");
-#endif
+
     /* Infinite loop */
-    init_TIMER_IRQ();
-    printf("start Loop %lld\r\n", time_us_64());
-    #if 0
-    #if AZURE_EN
-    prov_dev_client_ll_Connect();
-    // Enable the watchdog, requiring the watchdog to be updated every 100ms or the chip will reboot
-    // second arg is pause on debug which means the watchdog will pause when stepping through code
-    #endif
-    #endif
-    #if 1  //watchdog enable
-    watchdog_enable(2000, 1);
-    watchdog_update();
-    #endif
-    
-    //flash_test();
     for (;;)
     {
-        watchdog_update();
-        CheckEthernet();
-    #if AZURE_EN
-        if(NetStatus > 1)
-        {
             prov_dev_client_ll_Process();
-        }
-    #endif
         proto_uart_process();
-        manage_process();
-    #if 0
 #ifdef _DHCP
         if (0 > wizchip_dhcp_run())
         {
@@ -291,10 +164,6 @@ int main()
         }
 #endif
         wizchip_delay_ms(1000); // wait for 1 second
-#endif
-    //printf("now :  %lld\r\n", time_us_64());
-
-    //wizchip_delay_ms(1000); // wait for 1 second
     }
 }
 

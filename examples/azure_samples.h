@@ -16,14 +16,9 @@ extern const char pico_az_COMMON_NAME[];
 extern const char pico_az_CERTIFICATE[];
 extern const char pico_az_PRIVATE_KEY[];
 
-extern char *Arhis_DeviceID_str;
-extern char *Arhis_SSLKey_str;
-extern char *Arhis_Cert_str;
-#if 0
-extern static const char *COMMON_NAME;// = (const *)Arhis_DeviceID_str;
-extern static const char *CERTIFICATE;// = (const *)Arhis_Cert_str;
-extern static const char *PRIVATE_KEY;// = (const *)Arhis_SSLKey_str;
-#endif
+extern char *Test_DeviceID_str;
+extern char *Test_SSLKey_str;
+extern char *Test_Cert_str;
 
 void iothub_ll_telemetry_sample(void);
 void iothub_ll_c2d_sample(void);

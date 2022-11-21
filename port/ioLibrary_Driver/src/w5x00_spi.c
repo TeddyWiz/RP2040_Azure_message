@@ -208,7 +208,6 @@ void wizchip_initialize(void)
     }
 
     /* Check PHY link status */
-    #if 0
     do
     {
         if (ctlwizchip(CW_GET_PHYLINK, (void *)&temp) == -1)
@@ -218,7 +217,6 @@ void wizchip_initialize(void)
             return;
         }
     } while (temp == PHY_LINK_OFF);
-        #endif
 }
 
 void wizchip_check(void)

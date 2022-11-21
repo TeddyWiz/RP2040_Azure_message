@@ -56,11 +56,11 @@ and removing calls to _DoWork will yield the same results. */
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
 /* Paste in the your iothub connection string  */
-// static const char* connectionString = "[device connection string]";
-// static const char* x509certificate =
+//static const char* connectionString = "[device connection string]";
+//static const char* x509certificate =
 //"-----BEGIN CERTIFICATE-----""\n"
 //"-----END CERTIFICATE-----";
-// static const char* x509privatekey =
+//static const char* x509privatekey =
 //"-----BEGIN PRIVATE KEY-----""\n"
 //"-----END PRIVATE KEY-----";
 
@@ -162,7 +162,7 @@ void iothub_ll_client_x509_sample(void)
     float telemetry_temperature;
     float telemetry_humidity;
     const char *telemetry_scale = "Celsius";
-    // const char* telemetry_msg = "test_message";
+    //const char* telemetry_msg = "test_message";
     char telemetry_msg_buffer[80];
 
     // Select the Protocol to use with the connection
@@ -240,7 +240,7 @@ void iothub_ll_client_x509_sample(void)
                 if (messages_sent < MESSAGE_COUNT)
                 {
                     // // Construct the iothub message from a string or a byte array
-                    // message_handle = IoTHubMessage_CreateFromString(telemetry_msg);
+                    //message_handle = IoTHubMessage_CreateFromString(telemetry_msg);
                     // //message_handle = IoTHubMessage_CreateFromByteArray((const unsigned char*)msgText, strlen(msgText)));
 
                     // Construct the iothub message
@@ -263,9 +263,9 @@ void iothub_ll_client_x509_sample(void)
                     (void)IoTHubMessage_SetProperty(message_handle, "display_message", "Hello_RP2040_W5100S");
 
                     //(void)printf("Sending message %d to IoTHub\r\n", (int)(messages_sent + 1));
-                    // IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, NULL);
+                    //IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, NULL);
                     (void)printf("\r\nSending message %d to IoTHub\r\nMessage: %s\r\n", (int)(messages_sent + 1), telemetry_msg_buffer);
-                    // IoTHubDeviceClient_SendEventAsync(device_handle, message_handle, send_confirm_callback, NULL);
+                    //IoTHubDeviceClient_SendEventAsync(device_handle, message_handle, send_confirm_callback, NULL);
                     IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, NULL);
 
                     // The message is copied to the sdk so the we can destroy it
