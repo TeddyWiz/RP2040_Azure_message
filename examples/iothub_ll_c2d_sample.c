@@ -96,9 +96,6 @@ static int deviceMethodCallback(const char *method_name, const unsigned char *pa
 
     int result;
 
-    gpio_init(RESET_PIN);
-    gpio_set_dir(RESET_PIN, GPIO_OUT);
-
     // User led on
     printf("\n====================================================\n");
     printf("Device method %s arrived...\n", method_name);
@@ -111,12 +108,6 @@ static int deviceMethodCallback(const char *method_name, const unsigned char *pa
         *response_size = sizeof(deviceMethodResponse) - 1;
         *response = malloc(*response_size);
         (void)memcpy(*response, deviceMethodResponse, *response_size);
-
-        printf("POWER SHUTDOWN\r\n");
-        gpio_put(RESET_PIN, 1);
-        sleep_ms(3000);
-        printf("POWER ON\r\n");
-        gpio_put(RESET_PIN, 0);
 
         printf("Sent signal to Raspberry Pi.\n\n");
 
@@ -229,7 +220,7 @@ void iothub_ll_c2d_sample(void)
             {
                 // printf("stat flag = %d\n", status_flag);
                 // if (status_flag == 1)
-                if (RESET_PIN == 1)
+                //if (RESET_PIN == 1)
                 {
                     // // Construct the iothub message from a string or a byte array
                     // message_handle = IoTHubMessage_CreateFromString(telemetry_msg);

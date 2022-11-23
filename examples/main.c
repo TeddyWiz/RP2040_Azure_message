@@ -94,6 +94,7 @@ int main()
 // Pico board configuration - W5100S, GPIO, Timer Setting
 //-----------------------------------------------------------------------------------
     int8_t networkip_setting = 0;
+    int8_t Azure_Connect = 0, Azure_Set = 0;
 
     set_clock_khz();
 
@@ -111,8 +112,8 @@ int main()
 
     wizchip_1ms_timer_initialize(repeating_timer_callback);
 
-    printf("hello pico arhis system \n");
-#if 0
+    printf("hello pico Azure Message Test \n");
+
 #ifdef _DHCP
     // this example uses DHCP
     networkip_setting = wizchip_network_initialize(true, &g_net_info);
@@ -121,7 +122,8 @@ int main()
     networkip_setting = wizchip_network_initialize(false, &g_net_info);
 #endif
 
-    Load_Flash_Internal_Data();
+    Azure_Set = Load_Flash_Internal_Data();
+    printf("Azure load data[%d] \n", Azure_Set);
     // bool cancelled = cancel_repeating_timer(&timer);
     // printf("cancelled... %d\n", cancelled);
     if (networkip_setting)
@@ -150,20 +152,25 @@ int main()
         printf(" Check your network setting.\n");
 
     /* Infinite loop */
+    init_TIMER_IRQ();
+    printf("start Loop %lld\r\n", time_us_64());
+    #if 1
+    if(Azure_Set == 0)
+        prov_dev_client_ll_Connect();
+    else
+        printf("not set Azure data \r\n");
+#endif
     for (;;)
     {
-            prov_dev_client_ll_Process();
-        proto_uart_process();
-#ifdef _DHCP
-        if (0 > wizchip_dhcp_run())
+        if(Azure_Set == 0)
         {
-            printf(" Stop Example.\n");
-
-            while (1)
-                ;
+            prov_dev_client_ll_Process();
+            manage_process();
         }
-#endif
-        wizchip_delay_ms(1000); // wait for 1 second
+        proto_uart_process();
+        
+
+        //wizchip_delay_ms(1000); // wait for 1 second
     }
 }
 

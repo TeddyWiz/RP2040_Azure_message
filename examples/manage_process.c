@@ -5,14 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "hardware/flash.h"
-#include "hardware/adc.h"
+//#include "hardware/adc.h"
 #include "pico/stdlib.h"
 #include "pico/critical_section.h"
 #include "flashHandler.h"
 #include "wizchip_conf.h"
 #include "proto_pi_CMD.h"
 #include "azure_samples.h"
-#include "hardware/watchdog.h"
+//#include "hardware/watchdog.h"
 //#include "hardware/pwm.h"
 
 
@@ -148,7 +148,7 @@ int Load_DeviceID(void)
     }
     memcpy(Test_DeviceID_str, Test_DeviceID, Test_DeviceIDLen);
     #if DEBUG_PRINT
-    printf("Test_DeviceID_str[%d][%s]\r\n",Test_DeviceIDLen, Test_DeviceID_str);
+    printf("Test_DeviceID_str[%d]\r\n[%s]\r\n",Test_DeviceIDLen, Test_DeviceID_str);
     #endif
     return 0;
 }
@@ -164,7 +164,7 @@ int Load_Cert(void)
     }
     memcpy(Test_Cert_str, Test_Cert, Test_CertLen);
     #if DEBUG_PRINT
-        printf("Test_SSLKey_str[%d][%s]\r\n", Test_CertLen ,Test_Cert_str);
+        printf("Test_Cert__str[%d]\r\n[%s]\r\n", Test_CertLen ,Test_Cert_str);
     #endif
 
     return 0;
@@ -182,7 +182,7 @@ int Load_SSLKey(void)
     }
     memcpy(Test_SSLKey_str, Test_SSLKey, Test_SSLKeyLen);
     #if DEBUG_PRINT
-    printf("Test_SSLKey_str[%d][%s]\r\n",Test_SSLKeyLen, Test_SSLKey_str);
+    printf("Test_SSLKey_str[%d]\r\n[%s]\r\n",Test_SSLKeyLen, Test_SSLKey_str);
     #endif
     return 0;
 }
@@ -254,7 +254,7 @@ uint16_t proto_flash_write(uint32_t f_addr, uint8_t *Data, uint16_t d_len)
     write_flash(f_addr, temp_data, temp_len + 2);
     return temp_len;
 }
-
+#if 0
 void flash_test(void)
 {
     uint8_t api_test[]="XIx8sEc7voMlwJPw7e1wzipF7yKHCar3fY6Jnezd9T0cie";
@@ -275,6 +275,7 @@ void flash_test(void)
     printf("data Len %d \r\n", api_len);
     print_buf_c(api_data, api_len);
 }
+#endif
 
 #if 1
 int64_t alarm_callback(alarm_id_t id, void *user_data)
@@ -316,14 +317,17 @@ uint16_t manage_process(void)
     {
         Timer_irq_flag = 0;
         
-        if(regular_time > 7119) //regular report 1hour
+        //if(regular_time > 7119) //regular report 1hour
+        if(regular_time > 120)
         {
             regular_time = 0;
             //regular report 1hour
-            sprintf(telemetry_temp_buffer, "{\"DeviceID\": \"%s\",\"Volt1\":%2.2f,\"Volt2\":%2.2f,\"STATUS\":\"SUCCESS\"}", Test_DeviceID_str, Volt_data[0], Volt_data[1]);
+
+            sprintf(telemetry_temp_buffer, "{\"DeviceID\": \"%s\",\"TIMES\":%ld,\"STATUS\":\"SUCCESS\"}", Test_DeviceID_str, nowTime);
             #if AZURE_EN
             telemetry_send(telemetry_temp_buffer);
             #endif
+            printf("send: %s\r\n", telemetry_temp_buffer);
         }
     }
     return 0;

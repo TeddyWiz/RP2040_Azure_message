@@ -9,6 +9,8 @@
 #include "crc16.h"
 #include "proto_pi_CMD.h"
 #include "manage_process.h"
+#include "azure_samples.h"
+
 
 #define UART_ID uart1
 #define BAUD_RATE 115200
@@ -263,8 +265,8 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
 {
     uint16_t ret = 0;
     float CMD_volt_data[2];
-    uint8_t CMD_Buff[512];
-    uint16_t CMD_BuffLen = 0;
+    uint8_t Temp_Buff[1024];
+    uint16_t Temp_BuffLen = 0;
     #if DEBUG_PRINT
     printf("CMD Process : %c, %c \r\n ", *CMD, *(CMD + 1));
     #endif
@@ -274,61 +276,18 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
     #endif
     switch(*CMD)
     {
-        case 'A':
-            if(*(CMD+1) == 'K')     //api key 
-            {
-                if(Len == 0)
-                {   //get
-                    if(Arhis_ApiKeyLen == 0xffff)
-                    {
-                        proto_send("AK", "NONE", 4);
-                    }
-                    else
-                    {
-                        proto_send("AK", Arhis_ApiKey, Arhis_ApiKeyLen);
-                    }
-                    return 1;
-                }
-                else
-                {   //set
-                    ret = proto_flash_write(FLASH_API_OFFSET, Data, Len);
-                    Arhis_ApiKey = (uint8_t *)proto_flash_read(FLASH_API_OFFSET, &Arhis_ApiKeyLen);
-                    #if DEBUG_PRINT
-                    printf("Data[%d]:[%s]", Len, Data);
-                    printf("api flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_ApiKey, Arhis_ApiKeyLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "api key data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_ApiKeyLen, Arhis_ApiKey );
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    #if 0
-                    if(ret > 0)
-                        proto_send("OK", 0, 0);
-                    else
-                        proto_send("ER", 0, 0);
-                    #endif
-                    return 1;
-                }
-            }
-            else
-            {
-                printf("CMD no match \r\n");
-                return -1;
-            }
-            break;
         case 'C':
             if(*(CMD+1) == 'D')     //Cert Data
             {
                 if(Len == 0)
                 {   //get
-                    if(Arhis_CertLen == 0xffff)
+                    if(Test_CertLen == 0xffff)
                     {
                         proto_send("CD", "NONE", 4);
                     }
                     else
                     {
-                        proto_send("CD", Arhis_Cert, Arhis_CertLen);
+                        proto_send("CD", Test_Cert, Test_CertLen);
                     }
 
                     return 1;
@@ -336,54 +295,19 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
                 else
                 {   //set
                     ret = proto_flash_write(FLASH_CERT_OFFSET, Data, Len);
-                    Arhis_Cert = (uint8_t *)proto_flash_read(FLASH_CERT_OFFSET, &Arhis_CertLen);
+                    Test_Cert = (uint8_t *)proto_flash_read(FLASH_CERT_OFFSET, &Test_CertLen);
                     FREE_Cert();
                     Load_Cert();
                     #if DEBUG_PRINT
                     printf("Data[%d]:[%s]", Len, Data);
                     printf("cert flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_Cert, Arhis_CertLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "cert data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_CertLen, Arhis_Cert );
-                    DebugSend(Debug_buff, Debug_Len);
+                    print_buf_c(Test_Cert, Test_CertLen);
                     #endif
                     #if 0
                     if(ret > 0)
                         proto_send("OK", 0, 0);
                     else
                         proto_send("ER", 0, 0);
-                    #endif
-                }
-            }
-            else if(*(CMD+1) == 'F')     //RPI Config data
-            {
-                if(Len == 0)
-                {   //get
-                    if(Arhis_ConfigLen == 0xffff)
-                    {
-                        proto_send("CF", "NONE", 4);
-                    }
-                    else
-                    {
-                        proto_send("CF", Arhis_Config, Arhis_ConfigLen);
-                    }
-
-                    return 1;
-                }
-                else
-                {   //set
-                    ret = proto_flash_write(FLASH_RP_CONFIG_OFFSET, Data, Len);
-                    Arhis_Config = (uint8_t *)proto_flash_read(FLASH_RP_CONFIG_OFFSET, &Arhis_ConfigLen);
-                    #if DEBUG_PRINT
-                    printf("Data[%d]:[%s]", Len, Data);
-                    printf("RPI Config data flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_Config, Arhis_ConfigLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "RPI Config data:[%s], flash ret:%d, config read[%d]:[%s] \r\n", Data, ret, Arhis_ConfigLen, Arhis_Config);
-                    DebugSend(Debug_buff, Debug_Len);
-                    printf("RPI Config data:[%s], flash ret:%d, config read[%d]:[%s] \r\n", Data, ret, Arhis_ConfigLen, Arhis_Config);
                     #endif
                 }
             }
@@ -400,30 +324,26 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
             {
                 if(Len == 0)
                 {   //get
-                    if(Arhis_DeviceIDLen == 0xffff)
+                    if(Test_DeviceIDLen == 0xffff)
                     {
                         proto_send("DE", "NONE", 4);
                     }
                     else
                     {
-                        proto_send("DE", Arhis_DeviceID, Arhis_DeviceIDLen);
+                        proto_send("DE", Test_DeviceID, Test_DeviceIDLen);
                     }
                     return 1;
                 }
                 else
                 {   //set
                     ret = proto_flash_write(FLASH_DEVICEID_OFFSET, Data, Len);
-                    Arhis_DeviceID = (uint8_t *)proto_flash_read(FLASH_DEVICEID_OFFSET, &Arhis_DeviceIDLen);
+                    Test_DeviceID = (uint8_t *)proto_flash_read(FLASH_DEVICEID_OFFSET, &Test_DeviceIDLen);
                     FREE_DeviceID();
                     Load_DeviceID();
                     #if DEBUG_PRINT
-                    printf("Data[%d]:[%s]", Len, Data);
+                    printf("Data[%d]:[%s]\r\n", Len, Data);
                     printf("DeviceID flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_DeviceID, Arhis_DeviceIDLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "DeviceID data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_DeviceIDLen, Arhis_DeviceID );
-                    DebugSend(Debug_buff, Debug_Len);
+                    print_buf_c(Test_DeviceID, Test_DeviceIDLen);
                     #endif
                     return 1;
                 }
@@ -451,90 +371,6 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
                 #if DEBUG_PRINT
                 printf("CMD no match \r\n");
                 #endif
-                return -1;
-            }
-            break;
-        case 'H':
-            if(*(CMD+1) == 'A')     //hostaddress
-            {
-                if(Len == 0)
-                {   //get
-                    if(Arhis_HostAddrLen == 0xffff)
-                    {
-                        proto_send("HA", "NONE", 4);
-                    }
-                    else
-                    {
-                        proto_send("HA", Arhis_HostAddr, Arhis_HostAddrLen);
-                    }
-                    return 1;
-                }
-                else
-                {   //set
-                    ret = proto_flash_write(FLASH_HOSTADDR_OFFSET, Data, Len);
-                    Arhis_HostAddr = (uint8_t *)proto_flash_read(FLASH_HOSTADDR_OFFSET, &Arhis_HostAddrLen);
-                    #if DEBUG_PRINT
-                    printf("Data[%d]:[%s]\r\n", Len, Data);
-                    printf("host addr data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_HostAddrLen, Arhis_HostAddr );
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "host addr data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_HostAddrLen, Arhis_HostAddr );
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    return 1;
-                }
-            }
-            else
-            {
-                printf("CMD no match \r\n");
-                return -1;
-            }
-            break;
-        case 'L':
-            if(*(CMD+1) == 'D')     //LGT data (도광한 status)
-            {
-                if(Len == 0)
-                {   //get
-                    if(GET_LGP_STATUS() == 1)
-                    {
-                        proto_send("LD", "ON", 2);
-                        return 1;
-                    }
-                    else
-                    {
-                        proto_send("LD", "OFF", 3);
-                        return 1;
-                    }
-                }
-                else
-                {   //set
-                    if(strncmp(Data,"ON",2) == 0) //ON
-                    {
-                        SET_LGP_STATUS(1);
-                        #if DEBUG_UDP_EN
-                        Debug_Len = sprintf(Debug_buff, "set LGP ON %d \r\n", GET_LGP_STATUS());
-                        DebugSend(Debug_buff, Debug_Len);
-                        #endif
-                        return 1;
-                    }
-                    else if(strncmp(Data,"OFF",3) == 0) //ON
-                    {
-                        SET_LGP_STATUS(0);
-                        #if DEBUG_UDP_EN
-                        Debug_Len = sprintf(Debug_buff, "set LGP OFF %d \r\n", GET_LGP_STATUS());
-                        DebugSend(Debug_buff, Debug_Len);
-                        #endif
-                        return 1;
-                    }
-                    else
-                    {
-                        //not match cmd
-                    }
-                }
-            }
-            else
-            {
-                printf("CMD no match \r\n");
                 return -1;
             }
             break;
@@ -580,76 +416,28 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
             {
                 if(Len == 0)
                 {   //get
-                    if(Arhis_SSLKeyLen == 0xffff)
+                    if(Test_SSLKeyLen == 0xffff)
                     {
                         proto_send("SK", "NONE", 4);
                     }
                     else
                     {
-                        proto_send("SK", Arhis_SSLKey, Arhis_SSLKeyLen);
+                        proto_send("SK", Test_SSLKey, Test_SSLKeyLen);
                     }
                     return 1;
                 }
                 else
                 {   //set
                     ret = proto_flash_write(FLASH_KEY_OFFSET, Data, Len);
-                    Arhis_SSLKey = (uint8_t *)proto_flash_read(FLASH_KEY_OFFSET, &Arhis_SSLKeyLen);
+                    Test_SSLKey = (uint8_t *)proto_flash_read(FLASH_KEY_OFFSET, &Test_SSLKeyLen);
                     FREE_SSLKey();
                     Load_SSLKey();
                     #if DEBUG_PRINT
                     printf("Data[%d]:[%s]", Len, Data);
                     printf("SSL key flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_SSLKey, Arhis_SSLKeyLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "SSL key data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_SSLKeyLen, Arhis_SSLKey );
-                    DebugSend(Debug_buff, Debug_Len);
+                    print_buf_c(Test_SSLKey, Test_SSLKeyLen);
                     #endif
                     return 1;
-                }
-            }
-            else if(*(CMD+1) == 'T')        //status
-            {
-                if(Len == 0)
-                {   //get
-                    proto_send("ST", "SUCCESS", 7);
-                    return 1;
-                }
-                else
-                {   //set
-                    #if DEBUG_UDP_EN
-                    //DebugSend(Data, Len);
-                    Debug_Len = sprintf(Debug_buff, "data[%d]:[%s] status E: %d RP: %d  \r\n",Len, Data,GET_EmergenSEQ(), GET_RPI_STATUS());
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    if((strncmp("SUCCESS", Data, Len) == 0)&&(GET_RPI_STATUS() == 1))
-                    {
-                        if(GET_EmergenSEQ() == 1)
-                            SET_EmergenSEQ(2);
-                        SET_RPI_STATUS(0);
-                        #if DEBUG_UDP_EN
-                        Debug_Len = sprintf(Debug_buff, "ST Recv data[%d]:[%s] status E: %d RP: %d  \r\n",Len, Data,GET_EmergenSEQ(), GET_RPI_STATUS());
-                        DebugSend(Debug_buff, Debug_Len);
-                        #endif
-                        return 1;
-                    }
-                    else if((strncmp("SUCCESS", Data, Len) == 0)&&(GET_EmergenSEQ() == 1))
-                    {
-                        SET_EmergenSEQ(2);
-                        SET_RPI_STATUS(0);
-                        #if DEBUG_UDP_EN
-                        DebugSend("ST recv SUCCESS \r\n", strlen("ST recv SUCCESS \r\n"));
-                        #endif
-                        return 1;
-                    }
-                    else if ((strncmp("FAIL", Data, Len) == 0)&&(GET_EmergenSEQ() == 1))
-                    {
-                        SET_EmergenSEQ(3);
-                        #if DEBUG_UDP_EN
-                        DebugSend("ST recv FAIL \r\n", strlen("ST recv FAIL \r\n"));
-                        #endif
-                        return 1;
-                    }
                 }
             }
             else
@@ -659,112 +447,22 @@ int proto_CMD_Process(uint8_t *CMD, uint8_t *Data, uint16_t Len)
             }
             break;
         case 'T':
-            if(*(CMD+1) == 'K')     //token
+            if(*(CMD+1) == 'M')     //telemetry message send
             {
                 if(Len == 0)
                 {   //get
-                    if(Arhis_TokenLen == 0xffff)
-                    {
-                        proto_send("TK", "NONE", 4);
-                    }
-                    else
-                    {
-                        proto_send("TK", Arhis_Token, Arhis_TokenLen);
-                    }
+                    proto_send("TM", "NOT Message", strlen("NOT Message"));
                     return 1;
                 }
                 else
                 {   //set
-                    ret = proto_flash_write(FLASH_TOKEN_OFFSET, Data, Len);
-                    Arhis_Token = (uint8_t *)proto_flash_read(FLASH_TOKEN_OFFSET, &Arhis_TokenLen);
+                    Temp_BuffLen =sprintf(Temp_Buff, "{\"DeviceID\": \"%s\", \"Message\": \"%s\",\"TIMES\":%ld,\"STATUS\":\"SUCCESS\"}", Test_DeviceID_str, Data, time_us_32());
+                    telemetry_send(Temp_Buff);
                     #if DEBUG_PRINT
                     printf("Data[%d]:[%s]", Len, Data);
-                    printf("token flash write[%d]\r\n", ret);
-                    print_buf_c(Arhis_Token, Arhis_TokenLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "token data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_TokenLen, Arhis_Token );
-                    DebugSend(Debug_buff, Debug_Len);
+                    printf("telemetryData[%d]:%s\r\n", Temp_BuffLen, Temp_Buff);
                     #endif
                     return 1;
-                }
-            }
-            else
-            {
-                printf("CMD no match \r\n");
-                return -1;
-            }
-           break;
-        case 'U':
-            if(*(CMD+1) == 'D')     //uuid
-            {
-                if(Len == 0)
-                {   //get
-                    if(Arhis_UUIDLen == 0xffff)
-                    {
-                        proto_send("UD", "NONE", 4);
-                    }
-                    else
-                    {
-                        proto_send("UD", Arhis_UUID, Arhis_UUIDLen);
-                    }
-                    return 1;
-                }
-                else
-                {   //set
-                    ret = proto_flash_write(FLASH_UUID_OFFSET, Data, Len);
-                    Arhis_UUID = (uint8_t *)proto_flash_read(FLASH_UUID_OFFSET, &Arhis_UUIDLen);
-                    #if DEBUG_PRINT
-                    printf("Data[%d]:[%s]", Len, Data);
-                    printf("UUID write[%d]\r\n", ret);
-                    print_buf_c(Arhis_UUID, Arhis_UUIDLen);
-                    #endif
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "UUID data:[%s], flash ret:%d, aki read[%d]:[%s] \r\n", Data, ret, Arhis_UUIDLen, Arhis_UUID );
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    return 1;
-                }
-            }
-            else
-            {
-                printf("CMD no match \r\n");
-                return -1;
-            }
-            break;
-        case 'V':
-            if(*(CMD+1) == 'D')     //volt data
-            {
-                if(Len == 0)
-                {   //get
-                    CMD_volt_data[0] = GET_Volt_DATA(0);
-                    CMD_volt_data[1] = GET_Volt_DATA(1);
-                    CMD_BuffLen = sprintf(CMD_Buff, "1:%2.2f 2:%2.2f",CMD_volt_data[0], CMD_volt_data[1]);
-                    proto_send("VD", CMD_Buff, CMD_BuffLen);
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "CMD VD req data[%d]:[%s]\r\n", CMD_BuffLen, CMD_Buff);
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    return 1;
-                }
-                else
-                {   //set
-                }
-            }
-            else if(*(CMD+1) == 'N')     //Version Number
-            {
-                if(Len == 0)
-                {   //get
-                    CMD_BuffLen = sprintf(CMD_Buff, "%s",PROGVERSiON);
-                    proto_send("VN", CMD_Buff, CMD_BuffLen);
-                    #if DEBUG_UDP_EN
-                    Debug_Len = sprintf(Debug_buff, "CMD VN req data[%d]:[%s]\r\n", CMD_BuffLen, CMD_Buff);
-                    DebugSend(Debug_buff, Debug_Len);
-                    #endif
-                    return 1;
-                }
-                else
-                {   //set
                 }
             }
             else
@@ -809,10 +507,6 @@ int proto_uart_process(void)
             #if DEBUG_PRINT
             printf("CRC fail!! \r\n");
             #endif
-            #if DEBUG_UDP_EN
-            Debug_Len = sprintf(Debug_buff, "CRC Fail %04x , 0x%02x%02x\r\n", temp_CRC, proto_data.buffer[proto_data.len + 2], proto_data.buffer[proto_data.len + 2 + 1]);
-            DebugSend(Debug_buff, Debug_Len);
-            #endif
             proto_data.flag = 0;
             proto_data.index = 0;
             proto_data.seq = 0;
@@ -837,10 +531,6 @@ int proto_uart_process(void)
         {
             #if DEBUG_PRINT
             printf("time out %lld\r\n", nowTime - proto_data.lastTime);
-            #endif
-            #if DEBUG_UDP_EN
-            Debug_Len = sprintf(Debug_buff, "uart Recv Time out %ld\r\n", nowTime - proto_data.lastTime);
-            DebugSend(Debug_buff, Debug_Len);
             #endif
             proto_data.lastTime = nowTime;
             proto_data.seq = 0;

@@ -10,13 +10,12 @@ extern "C"
 #include "port_common.h"
 
 #define FLASH_TARGET_OFFSET 0x180000//256*1024 //network data (MAC) 256
-#define FLASH_DEVICEID_OFFSET (FLASH_TARGET_OFFSET + 256)    //device ID 256
+#define FLASH_DEVICEID_OFFSET (FLASH_TARGET_OFFSET + 1280)    //device ID 256
 #define FLASH_KEY_OFFSET (FLASH_DEVICEID_OFFSET + 256)    //SSL key 4096
 #define FLASH_CERT_OFFSET (FLASH_KEY_OFFSET + 4096)    //cert data 4096
-#define FLASH_RP_CONFIG_OFFSET (FLASH_CERT_OFFSET + 4096)    //cert data 4096
 
 
-#define DEBUG_UDP_EN        1
+//#define DEBUG_UDP_EN        1
 #define DEBUG_PRINT         1
 #define AZURE_EN            1
 

@@ -79,6 +79,14 @@ static const char *PROXY_ADDRESS = "127.0.0.1";
 #define MESSAGES_TO_SEND 2
 #define TIME_BETWEEN_MESSAGES 10
 
+/*Global value*/
+int status_value = 0;
+int status_flag = 0;
+
+int light_blink = 0;
+
+static size_t g_message_count_send_confirmations = 0;
+
 typedef struct CLIENT_SAMPLE_INFO_TAG
 {
     unsigned int sleep_time;
@@ -119,26 +127,28 @@ static int deviceMethodCallback(const char *method_name, const unsigned char *pa
 
     // User led on
     printf("\n==================================================================\n");
-    printf("Device method %s arrived...\n", method_name);
+    printf("Device method [%s arrived...\n", method_name);
+    printf("Payload[%d]=%s\r\n", size, payload);
 
     if (strcmp("reset", method_name) == 0)
     {
-        printf("\nReceived device powerReset request.\n");
+        printf("\nReceived device Reset request.\n");
 
-        const char deviceMethodResponse[] = "{ \"Response\": \"arhis_device Reset OK\" }";
+        const char deviceMethodResponse[] = "{ \"Response\": \"device Reset OK\" }";
         *response_size = sizeof(deviceMethodResponse) - 1;
         *response = malloc(*response_size);
         (void)memcpy(*response, deviceMethodResponse, *response_size);
 
-        //printf("Rpi SHUTDOWN\r\n");
-        //gpio_put(PI_RESET_PIN, 1);
-        ctrl_PW_RPI(1);
-        sleep_ms(3000);
-        //printf("POWER ON\r\n");
-        //gpio_put(PI_RESET_PIN, 0);
-        ctrl_PW_RPI(0);
+        result = 200;
+    }
+    else if (strcmp("test", method_name) == 0)
+    {
+        printf("\nReceived device test request.\n");
 
-        //printf("Sent signal to Raspberry Pi.\n\n");
+        const char deviceMethodResponse[] = "{ \"Response\": \"device test OK\" }";
+        *response_size = sizeof(deviceMethodResponse) - 1;
+        *response = malloc(*response_size);
+        (void)memcpy(*response, deviceMethodResponse, *response_size);
 
         result = 200;
     }
@@ -208,7 +218,7 @@ static void register_device_callback(PROV_DEVICE_RESULT register_result, const c
         }
     }
 }
-#if 0
+#if 1
 void prov_dev_client_ll_sample(void)
 {
     SECURE_DEVICE_TYPE hsm_type;
@@ -217,9 +227,11 @@ void prov_dev_client_ll_sample(void)
     //hsm_type = SECURE_DEVICE_TYPE_SYMMETRIC_KEY;
 
     bool traceOn = false;
+    size_t messages_count = 0;
 
     (void)IoTHub_Init();
     (void)prov_dev_security_init(hsm_type);
+    //add_alarm_in_ms(500, alarm_callback, NULL, false);
     // Set the symmetric key if using they auth type
     //prov_dev_set_symmetric_key_info("symm-key-device-007", "hyKuFyHXCUVE1fW9f+phyNSs0X+8ZInphXD5riBsN7023c7WonbefqCaRtjBo6al3fhb3lXL2cV8qJafpU0kmA==");
 
@@ -350,23 +362,26 @@ void prov_dev_client_ll_sample(void)
             IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
-            (void)IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle, receive_msg_callback, &iothub_info);
+            // (void)IoTHubDeviceClient_LL_SetMessageCallback(device_ll_handle, deviceMethodCallback, &iothub_info);
+            if (IoTHubDeviceClient_LL_SetDeviceMethodCallback(device_ll_handle, deviceMethodCallback, &messages_count) != IOTHUB_CLIENT_OK)
+            {
+                (void)printf("ERROR: IoTHubClient_LL_SetMessageCallback..........FAILED!\r\n");
+            }
 
             (void)printf("Sending 1 messages to IoTHub every %d seconds for %d messages (Send any message to stop)\r\n", TIME_BETWEEN_MESSAGES, MESSAGES_TO_SEND);
             do
             {
                 if (iothub_info.connected != 0)
                 {
-                    // Send a message every TIME_BETWEEN_MESSAGES seconds
-                    (void)tickcounter_get_current_ms(tick_counter_handle, &current_tick);
-                    (void)printf("current_tick (%lld), last_send_time(%lld)!\r\n", current_tick, last_send_time);
-
-                    if ((current_tick - last_send_time) / 1000 > TIME_BETWEEN_MESSAGES)
+                    if (status_flag == 1)
                     {
                         static char msgText[1024];
-                        sprintf_s(msgText, sizeof(msgText), "{ \"message_index\" : \"%zu\" }", msg_count++);
+                        sprintf(msgText, "{\"message\" : \"[ARHIS] device not operated\"}");
+                        (void)printf("\r\nSending message to IoTHub\r\nMessage: %s\r\n", msgText);
 
                         IOTHUB_MESSAGE_HANDLE msg_handle = IoTHubMessage_CreateFromByteArray((const unsigned char *)msgText, strlen(msgText));
+                        (void)IoTHubMessage_SetProperty(msg_handle, "display_message", "RP2040_W5100S_SEND");
+
                         if (msg_handle == NULL)
                         {
                             (void)printf("ERROR: iotHubMessageHandle is NULL!\r\n");
@@ -388,7 +403,7 @@ void prov_dev_client_ll_sample(void)
                 }
                 IoTHubDeviceClient_LL_DoWork(device_ll_handle);
                 ThreadAPI_Sleep(1);
-            } while (iothub_info.stop_running == 0 && msg_count < MESSAGES_TO_SEND);
+            } while (true);
 
             size_t index = 0;
             for (index = 0; index < 10; index++)

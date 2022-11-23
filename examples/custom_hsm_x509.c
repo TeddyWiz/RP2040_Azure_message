@@ -84,9 +84,9 @@ HSM_CLIENT_HANDLE custom_hsm_create(void)
         hsm_info->key = PRIVATE_KEY;
         hsm_info->common_name = COMMON_NAME;
         #else
-        hsm_info->certificate = Arhis_Cert_str;
-        hsm_info->key = Arhis_SSLKey_str;
-        hsm_info->common_name = Arhis_DeviceID_str;
+        hsm_info->certificate = Test_Cert_str;
+        hsm_info->key = Test_SSLKey_str;
+        hsm_info->common_name = Test_DeviceID_str;
         #endif
         hsm_info->endorsement_key = EK;
         hsm_info->ek_length = EK_LEN;
